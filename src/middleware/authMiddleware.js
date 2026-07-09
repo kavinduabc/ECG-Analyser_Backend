@@ -1,0 +1,27 @@
+const jwt = require("jsonwebtoken");
+
+function requireAuth(req, res, next) {
+    const header = req.headers.authorization || req.headers.Authorization;
+
+    if (!header || !header.startsWith("Bearer ")) {
+        return res.status(401).json({
+            success: false,
+            message: "Authorization token is required"
+        });
+    }
+
+    const token = header.slice(7);
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || "ecg-backend-secret");
+        req.user = decoded;
+        return next();
+    } catch (error) {
+        return res.status(401).json({
+            success: false,
+            message: "Invalid or expired token"
+        });
+    }
+}
+
+module.exports = requireAuth;

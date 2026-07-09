@@ -1,6 +1,10 @@
 const express = require("express");
 const cors = require("cors");
 const morgan = require("morgan");
+const path = require("path");
+
+const userRoutes = require("./routes/userRoutes");
+const patientRoutes = require("./routes/patientRoutes");
 
 const app = express();
 
@@ -17,6 +21,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(morgan("dev"));
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 /*
 |--------------------------------------------------------------------------
@@ -39,9 +45,8 @@ app.get("/", (req, res) => {
 |--------------------------------------------------------------------------
 */
 
-// app.use("/api/auth", authRoutes);
-// app.use("/api/patient", patientRoutes);
-// app.use("/api/prediction", predictionRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/patients", patientRoutes);
 
 /*
 |--------------------------------------------------------------------------
