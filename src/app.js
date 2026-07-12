@@ -5,6 +5,9 @@ const path = require("path");
 
 const userRoutes = require("./routes/userRoutes");
 const patientRoutes = require("./routes/patientRoutes");
+const ecgRoutes = require("./routes/ecgRoutes");
+const predictionRoutes = require("./routes/predictionRoutes");
+const modelInfoRoutes = require("./routes/modelInfoRoutes");
 
 const app = express();
 
@@ -47,6 +50,9 @@ app.get("/", (req, res) => {
 
 app.use("/api/users", userRoutes);
 app.use("/api/patients", patientRoutes);
+app.use("/api/ecg", ecgRoutes);
+app.use("/api/predictions", predictionRoutes);
+app.use("/api/models", modelInfoRoutes);
 
 /*
 |--------------------------------------------------------------------------

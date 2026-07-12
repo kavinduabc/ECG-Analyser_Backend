@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const ecgRecordSchema = new mongoose.Schema(
   {
@@ -72,4 +72,4 @@ const ecgRecordSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model("ECGRecord", ecgRecordSchema);
+module.exports = mongoose.model("ECGRecord", ecgRecordSchema);

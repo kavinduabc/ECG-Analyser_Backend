@@ -1,10 +1,16 @@
-import mongoose from "mongoose";
+const mongoose = require("mongoose");
 
 const modelInfoSchema = new mongoose.Schema(
   {
-    modelName: String,
+    modelName: {
+      type: String,
+      required: true,
+    },
 
-    version: String,
+    version: {
+      type: String,
+      required: true,
+    },
 
     accuracy: Number,
 
@@ -42,4 +48,4 @@ const modelInfoSchema = new mongoose.Schema(
   }
 );
 
-export default mongoose.model("ModelInfo", modelInfoSchema);
+module.exports = mongoose.model("ModelInfo", modelInfoSchema);
