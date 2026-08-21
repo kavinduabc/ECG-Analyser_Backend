@@ -7,6 +7,8 @@ const {
     getECGRecords,
     getECGRecordById,
     deleteECGRecord,
+    getECGSignal,
+    getExplainableAI,
 } = require("../controllers/ecgController");
 
 const router = express.Router();
@@ -24,6 +26,8 @@ const router = express.Router();
 
 router.post("/upload", requireAuth, uploadECGFiles, uploadECG);
 router.get("/", requireAuth, getECGRecords);
+router.get("/:id/signal", requireAuth, getECGSignal);
+router.post("/:id/explain", requireAuth, getExplainableAI);
 router.get("/:id", requireAuth, getECGRecordById);
 router.delete("/:id", requireAuth, deleteECGRecord);
 

@@ -80,18 +80,18 @@ async function sendECGForPrediction(heaAbsPath, datAbsPath) {
 
 function getMockPrediction() {
     return {
-        disease: "Normal Sinus Rhythm",
-        confidence: 98.63,
+        disease: "Normal ECG (NORM)",
+        description: "No significant abnormality detected. Normal sinus rhythm.",
+        confidence: 94.27,
         probabilities: {
-            Normal: 98.63,
-            AFib: 0.62,
-            "Myocardial Infarction": 0.41,
-            Arrhythmia: 0.18,
-            "Other Abnormality": 0.16,
+            "Normal ECG (NORM)":            94.27,
+            "Myocardial Infarction (MI)":    3.18,
+            "ST/T-wave Change (STTC)":       1.72,
+            "Conduction Disturbance (CD)":   0.83,
         },
-        rawOutput: [0.9863, 0.0062, 0.0041, 0.0018, 0.0016],
-        processingTime: 0.452,
-        modelName: "CNN + BiLSTM + Mish",
+        rawOutput: [0.9427, 0.0318, 0.0172, 0.0083],
+        processingTime: 0.382,
+        modelName: "CNN + Mish + BiLSTM",
         modelVersion: "1.0",
     };
 }

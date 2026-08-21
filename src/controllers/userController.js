@@ -58,7 +58,13 @@ async function createUser(req, res) {
             data.profilePicture = buildProfilePicturePath(req.file);
         }
 
-        const requiredFields = ["userID", "name", "password", "designation", "department", "profilePicture"];
+        // Auto-generate an avatar URL if no picture was uploaded
+        if (!data.profilePicture) {
+            const initials = encodeURIComponent((data.name || "User").slice(0, 2).toUpperCase());
+            data.profilePicture = `https://ui-avatars.com/api/?name=${initials}&background=0b1b3a&color=fff&size=128`;
+        }
+
+        const requiredFields = ["userID", "name", "password", "designation", "department"];
         const missingFields = requiredFields.filter((field) => !data[field] || String(data[field]).trim() === "");
 
         if (missingFields.length > 0) {
@@ -90,6 +96,66 @@ async function createUser(req, res) {
         return res.status(500).json({
             success: false,
             message: "Error creating user",
+            error: error.message
+        });
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| Register User (Create + Auto-Login)
+| POST /api/users/register
+|--------------------------------------------------------------------------
+*/
+
+async function registerUser(req, res) {
+    try {
+        const data = { ...req.body };
+
+        if (req.file) {
+            data.profilePicture = buildProfilePicturePath(req.file);
+        }
+
+        // Auto-generate avatar if no picture uploaded
+        if (!data.profilePicture) {
+            const initials = encodeURIComponent((data.name || "User").slice(0, 2).toUpperCase());
+            data.profilePicture = `https://ui-avatars.com/api/?name=${initials}&background=0b1b3a&color=fff&size=128`;
+        }
+
+        const requiredFields = ["userID", "name", "password", "designation", "department"];
+        const missingFields = requiredFields.filter((f) => !data[f] || String(data[f]).trim() === "");
+
+        if (missingFields.length > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `Missing required fields: ${missingFields.join(", ")}`
+            });
+        }
+
+        const existingUser = await User.findOne({ userID: data.userID });
+        if (existingUser) {
+            return res.status(409).json({
+                success: false,
+                message: "This User ID is already taken. Please choose another."
+            });
+        }
+
+        data.password = await bcrypt.hash(data.password, 10);
+        const savedUser = await User.create(data);
+
+        // Auto-issue a token so the user is logged in immediately
+        const token = createAuthToken(savedUser);
+
+        return res.status(201).json({
+            success: true,
+            message: "Account created successfully",
+            token,
+            user: sanitizeUser(savedUser)
+        });
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Error creating account",
             error: error.message
         });
     }
@@ -248,6 +314,7 @@ async function deleteUser(req, res) {
 module.exports = {
     upload,
     createUser,
+    registerUser,
     loginUser,
     getUsers,
     getUserById,

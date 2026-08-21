@@ -1,4 +1,7 @@
 const path = require("path");
+const fs = require("fs");
+const FormData = require("form-data");
+const axios = require("axios");
 
 const ECGRecord = require("../models/ecgRecord");
 const Prediction = require("../models/prediction");
@@ -7,6 +10,8 @@ const Patient = require("../models/patient");
 const { uploadECGFiles, buildECGFilePath, deleteECGFiles } = require("../services/ecgService");
 const { sendECGForPrediction } = require("../services/aiService");
 const { sendSuccess, sendError } = require("../utils/apiResponse");
+
+const AI_BASE = process.env.AI_BASE_URL || "http://localhost:8000";
 
 /*
 |--------------------------------------------------------------------------
@@ -187,10 +192,107 @@ async function deleteECGRecord(req, res) {
     }
 }
 
+/*
+|--------------------------------------------------------------------------
+| Get Raw ECG Signal for Visualization
+| GET /api/ecg/:id/signal
+|--------------------------------------------------------------------------
+*/
+
+async function getECGSignal(req, res) {
+    try {
+        const record = await ECGRecord.findById(req.params.id);
+
+        if (!record) {
+            return sendError(res, 404, "ECG record not found.");
+        }
+
+        const heaAbsPath = path.join(__dirname, "..", record.heaFile);
+        const datAbsPath = path.join(__dirname, "..", record.datFile);
+
+        if (!fs.existsSync(heaAbsPath) || !fs.existsSync(datAbsPath)) {
+            return sendError(res, 404, "ECG files not found on disk.");
+        }
+
+        // Proxy files to FastAPI /signal endpoint using top-level form-data import
+        const formData = new FormData();
+        formData.append("hea_file", fs.createReadStream(heaAbsPath), {
+            filename: path.basename(heaAbsPath),   // e.g. ecg-1234.hea
+            contentType: "application/octet-stream",
+        });
+        formData.append("dat_file", fs.createReadStream(datAbsPath), {
+            filename: path.basename(datAbsPath),   // e.g. ecg-5678.dat
+            contentType: "application/octet-stream",
+        });
+
+        const aiResponse = await axios.post(`${AI_BASE}/signal`, formData, {
+            headers: formData.getHeaders(),
+            timeout: 30000,
+        });
+
+        return sendSuccess(res, 200, "ECG signal data fetched successfully.", aiResponse.data);
+    } catch (error) {
+        const detail = error.response?.data?.detail || error.message;
+        return sendError(res, 500, "Error fetching ECG signal.", detail);
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
+| Get Explainable AI Results — Prediction + GradientSHAP
+| POST /api/ecg/:id/explain
+|--------------------------------------------------------------------------
+*/
+
+async function getExplainableAI(req, res) {
+    try {
+        const record = await ECGRecord.findById(req.params.id);
+
+        if (!record) {
+            return sendError(res, 404, "ECG record not found.");
+        }
+
+        const heaAbsPath = path.join(__dirname, "..", record.heaFile);
+        const datAbsPath = path.join(__dirname, "..", record.datFile);
+
+        if (!fs.existsSync(heaAbsPath) || !fs.existsSync(datAbsPath)) {
+            return sendError(res, 404, "ECG files not found on disk.");
+        }
+
+        // Proxy .hea + .dat files to FastAPI /predict-explain
+        const formData = new FormData();
+        formData.append("hea_file", fs.createReadStream(heaAbsPath), {
+            filename: path.basename(heaAbsPath),
+            contentType: "application/octet-stream",
+        });
+        formData.append("dat_file", fs.createReadStream(datAbsPath), {
+            filename: path.basename(datAbsPath),
+            contentType: "application/octet-stream",
+        });
+
+        // /predict-explain takes longer due to XAI pipeline — use 120s timeout
+        const aiResponse = await axios.post(`${AI_BASE}/predict-explain`, formData, {
+            headers: formData.getHeaders(),
+            timeout: 120_000,
+        });
+
+        return sendSuccess(
+            res, 200,
+            "XAI prediction completed successfully.",
+            aiResponse.data
+        );
+    } catch (error) {
+        const detail = error.response?.data?.detail || error.message;
+        return sendError(res, 500, "Error generating XAI explanation.", detail);
+    }
+}
+
 module.exports = {
     uploadECGFiles,
     uploadECG,
     getECGRecords,
     getECGRecordById,
     deleteECGRecord,
+    getECGSignal,
+    getExplainableAI,
 };

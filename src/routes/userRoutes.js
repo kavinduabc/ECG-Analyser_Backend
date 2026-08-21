@@ -4,6 +4,7 @@ const {
     upload,
     createUser,
     loginUser,
+    registerUser,
     getUsers,
     getUserById,
     updateUser,
@@ -12,6 +13,7 @@ const {
 
 const router = express.Router();
 
+router.post("/register", upload.single("profilePicture"), registerUser);
 router.post("/", upload.single("profilePicture"), createUser);
 router.post("/login", loginUser);
 router.get("/", getUsers);
