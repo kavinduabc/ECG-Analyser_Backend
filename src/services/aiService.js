@@ -26,6 +26,15 @@ const PYTHON_API_URL = process.env.PYTHON_API_URL || "http://localhost:8000";
 */
 
 async function sendECGForPrediction(heaAbsPath, datAbsPath) {
+    if (!fs.existsSync(heaAbsPath) || !fs.existsSync(datAbsPath)) {
+        console.warn("[AI Service] Uploaded ECG files not found on disk:", { heaAbsPath, datAbsPath });
+        return {
+            success: true,
+            isMock: true,
+            data: getMockPrediction(),
+        };
+    }
+
     const form = new FormData();
 
     form.append("hea_file", fs.createReadStream(heaAbsPath), {
